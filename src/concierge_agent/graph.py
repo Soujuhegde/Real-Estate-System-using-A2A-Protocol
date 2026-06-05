@@ -59,11 +59,11 @@ def classify_intent_node(state: OrchestratorState) -> OrchestratorState:
             raw = chat_complete(INTENT_SYSTEM, user_input, temperature=0.1)
             
         raw = raw.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        parsed = json.loads(raw.strip())
+        import re
+        match = re.search(r'\{.*\}', raw, re.DOTALL)
+        if match:
+            raw = match.group(0)
+        parsed = json.loads(raw)
         intent = parsed.get("intent", "unknown")
         payload = parsed.get("payload", {})
     except Exception as e:

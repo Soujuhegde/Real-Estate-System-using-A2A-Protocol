@@ -37,9 +37,11 @@ def chat_complete(system_prompt: str, user_prompt: str, temperature: float = 0.7
                 {"role": "user", "content": user_prompt},
             ],
             temperature=temperature,
-            max_tokens=1024,
+            max_tokens=4096,
         )
-        return response.choices[0].message.content.strip()
+        msg = response.choices[0].message
+        content = msg.content or getattr(msg, 'reasoning_content', '') or ''
+        return content.strip()
     except Exception as e:
         logger.error(f"LLM call failed: {e}")
         raise
@@ -60,9 +62,11 @@ def chat_complete_history(system_prompt: str, chat_history: list, temperature: f
             model=config.SARVAM_MODEL,
             messages=messages,
             temperature=temperature,
-            max_tokens=1024,
+            max_tokens=4096,
         )
-        return response.choices[0].message.content.strip()
+        msg = response.choices[0].message
+        content = msg.content or getattr(msg, 'reasoning_content', '') or ''
+        return content.strip()
     except Exception as e:
         logger.error(f"LLM call failed: {e}")
         raise
