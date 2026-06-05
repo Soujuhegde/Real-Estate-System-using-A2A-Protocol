@@ -7,37 +7,80 @@ import json
 
 st.set_page_config(page_title="Market Intelligence", page_icon="📊", layout="wide")
 
+# Inject Global CSS
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+    h1, h2, h3, h4, h5, h6, .page-header { font-family: 'Outfit', sans-serif !important; }
+    
+    .page-header {
+        font-size: 2.2rem; font-weight: 700; color: #1E293B; margin-bottom: 5px;
+        display: flex; align-items: center; gap: 12px;
+    }
+    .page-sub { color: #64748B; font-size: 1.05rem; margin-bottom: 30px; font-weight: 400; }
+    
+    .form-container {
+        background: white; border-radius: 16px; padding: 30px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #E2E8F0;
+        margin-bottom: 20px;
+    }
+    
+    .insight-card {
+        background: white; border-radius: 12px; padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04); border: 1px solid #E2E8F0;
+        margin-bottom: 16px; transition: transform 0.2s ease;
+    }
+    .insight-card:hover { transform: translateX(5px); border-color: #CBD5E1; }
+    
+    header[data-testid="stHeader"] { visibility: hidden; }
+</style>
+""", unsafe_allow_html=True)
+
 CONCIERGE_URL = "http://localhost:8000"
 
-st.markdown("## 📊 Market Intelligence")
-st.markdown("Query the RAG pipeline or manually trigger analysis for a property.")
+# ── Top Navigation ────────────────────────────────────────────────────────────
+cols = st.columns(5)
+with cols[0]: st.page_link("app.py", label="🏠 Home")
+with cols[1]: st.page_link("pages/1_Customer_Onboarding.py", label="👤 Client Registration")
+with cols[2]: st.page_link("pages/2_Deal_Onboarding.py", label="🏘️ Add Property")
+with cols[3]: st.page_link("pages/3_Market_Intelligence.py", label="📊 Market Insights")
+with cols[4]: st.page_link("pages/4_Concierge_Chat.py", label="💬 Smart Assistant")
 st.divider()
 
-tab1, tab2 = st.tabs(["🔍 Query Insights (RAG)", "⚡ Generate Insights"])
+st.markdown('<div class="page-header">📊 Market Insights</div>', unsafe_allow_html=True)
+st.markdown('<div class="page-sub">Search through our market data or generate new insights for a property.</div>', unsafe_allow_html=True)
 
-# ── Tab 1: RAG Query ──────────────────────────────────────────────────────────
+tab1, tab2 = st.tabs(["🔍 Search Insights", "⚡ Generate Insights"])
+
+# ── Tab 1: Search ─────────────────────────────────────────────────────────────
 with tab1:
-    st.markdown("### Semantic Search Over Stored Insights")
-    st.markdown("Ask any question — the system retrieves the most relevant market insights from the vector database.")
+    st.markdown("<br>", unsafe_allow_html=True)
+    with st.container():
+        st.markdown('<div class="form-container">', unsafe_allow_html=True)
+        st.markdown("<h4 style='margin-top:0;color:#334155'>Search Market Data</h4>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#64748B;font-size:0.95rem'>Ask any question — we will find the most relevant market insights for you.</p>", unsafe_allow_html=True)
 
-    with st.form("rag_query_form"):
-        query = st.text_area(
-            "Your Question",
-            placeholder="What are the rental yield prospects for apartments in Whitefield?\nWhat are the risk factors for properties in Electronic City?\nWhich properties have the best ROI potential?",
-            height=100,
-        )
-        property_id_filter = st.text_input(
-            "Filter by Property ID (optional)",
-            placeholder="PROP-XXXXXXXX",
-        )
-        submitted = st.form_submit_button("🔍 Search Insights", type="primary", use_container_width=True)
+        with st.form("rag_query_form", clear_on_submit=False):
+            query = st.text_area(
+                "Your Question",
+                placeholder="e.g. What are the rental yield prospects for apartments in Whitefield?",
+                height=100,
+            )
+            property_id_filter = st.text_input(
+                "Filter by Property ID (optional)",
+                placeholder="e.g. PROP-XXXXXXXX",
+            )
+            st.markdown("<br>", unsafe_allow_html=True)
+            submitted = st.form_submit_button("🔍 Search Knowledge Base", type="primary", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     if submitted and query:
         payload: dict = {"query": query}
         if property_id_filter.strip():
             payload["property_id"] = property_id_filter.strip()
 
-        with st.spinner("Searching vector database..."):
+        with st.spinner("Searching market data..."):
             try:
                 resp = httpx.post(
                     f"{CONCIERGE_URL}/agents/marketing/insights",
@@ -53,7 +96,6 @@ with tab1:
                 artifacts = data.get("artifacts", [])
 
                 if state == "completed":
-                    # Try to parse structured results from artifacts
                     results = []
                     for art in artifacts:
                         for part in art.get("parts", []):
@@ -63,7 +105,7 @@ with tab1:
                                 pass
 
                     if results:
-                        st.success(f"Found **{len(results)}** relevant insights")
+                        st.markdown(f"<div style='margin-bottom:15px;color:#10B981;font-weight:600'>✅ Found {len(results)} relevant insights</div>", unsafe_allow_html=True)
                         for r in results:
                             itype = r.get("insight_type", "insight")
                             content = r.get("content", "")
@@ -71,29 +113,29 @@ with tab1:
                             pid = r.get("property_id", "")
 
                             type_config = {
-                                "market_trend": ("📈", "#dbeafe", "#1e40af"),
-                                "risk_signal": ("⚠️", "#fef3c7", "#92400e"),
-                                "opportunity": ("💡", "#dcfce7", "#166534"),
+                                "market_trend": ("📈", "#DBEAFE", "#1E40AF"),
+                                "risk_signal": ("⚠️", "#FEF3C7", "#92400E"),
+                                "opportunity": ("💡", "#DCFCE7", "#166534"),
                             }
-                            icon, bg, color = type_config.get(itype, ("📌", "#f1f5f9", "#334155"))
+                            icon, bg, color = type_config.get(itype, ("📌", "#F1F5F9", "#334155"))
 
                             st.markdown(f"""
-                            <div style="background:{bg};border-radius:10px;padding:14px 16px;margin-bottom:10px">
+                            <div class="insight-card" style="border-left: 4px solid {color}">
                                 <div style="display:flex;justify-content:space-between;align-items:flex-start">
                                     <div>
-                                        <span style="background:{color};color:white;padding:2px 10px;
-                                                     border-radius:20px;font-size:0.75rem;font-weight:600">
-                                            {icon} {itype.replace('_', ' ').title()}
+                                        <span style="background:{bg};color:{color};padding:4px 12px;
+                                                     border-radius:20px;font-size:0.75rem;font-weight:700;letter-spacing:0.5px">
+                                            {icon} {itype.replace('_', ' ').upper()}
                                         </span>
-                                        <span style="color:#94a3b8;font-size:0.75rem;margin-left:10px">
+                                        <span style="color:#64748B;font-size:0.85rem;margin-left:12px;font-family:monospace">
                                             {pid}
                                         </span>
                                     </div>
-                                    <span style="color:#94a3b8;font-size:0.75rem">
-                                        Score: {score:.3f}
+                                    <span style="color:#94A3B8;font-size:0.75rem;font-weight:600">
+                                        Relevance: {score:.2f}
                                     </span>
                                 </div>
-                                <div style="margin-top:10px;color:#1e293b;font-size:0.95rem;line-height:1.5">
+                                <div style="margin-top:16px;color:#334155;font-size:1rem;line-height:1.6">
                                     {content}
                                 </div>
                             </div>
@@ -106,23 +148,27 @@ with tab1:
             except httpx.ConnectError:
                 st.error("🔌 Cannot connect to Concierge Agent.")
             except Exception as e:
-                st.error(f"Error: {e}")
+                st.error(f"System Error: {e}")
 
 # ── Tab 2: Generate Insights ──────────────────────────────────────────────────
 with tab2:
-    st.markdown("### Manually Trigger Market Analysis")
-    st.markdown("If automatic triggering failed, or you want to regenerate insights for a property.")
+    st.markdown("<br>", unsafe_allow_html=True)
+    with st.container():
+        st.markdown('<div class="form-container">', unsafe_allow_html=True)
+        st.markdown("<h4 style='margin-top:0;color:#334155'>Manually Trigger Analysis</h4>", unsafe_allow_html=True)
+        
+        with st.form("generate_form", clear_on_submit=False):
+            col1, col2 = st.columns(2)
+            with col1:
+                property_id = st.text_input("Property ID *", placeholder="PROP-XXXXXXXX")
+                location = st.text_input("Location *", placeholder="e.g. Whitefield, Bengaluru")
+            with col2:
+                prop_type = st.selectbox("Property Type", ["apartment", "villa", "plot", "commercial", "studio"])
+                price = st.number_input("Price (₹)", min_value=0, value=8500000, step=100000, format="%d")
 
-    with st.form("generate_form"):
-        col1, col2 = st.columns(2)
-        with col1:
-            property_id = st.text_input("Property ID *", placeholder="PROP-XXXXXXXX")
-            location = st.text_input("Location *", placeholder="Whitefield, Bengaluru")
-        with col2:
-            prop_type = st.selectbox("Property Type", ["apartment", "villa", "plot", "commercial", "studio"])
-            price = st.number_input("Price (₹)", min_value=0, value=8500000, step=100000, format="%d")
-
-        gen_submitted = st.form_submit_button("⚡ Generate Insights", type="primary", use_container_width=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+            gen_submitted = st.form_submit_button("⚡ Synthesize Insights", type="primary", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     if gen_submitted:
         if not property_id or not location:
@@ -135,7 +181,7 @@ with tab2:
                 "price": float(price),
             }
 
-            with st.spinner("Generating AI-powered market insights..."):
+            with st.spinner("Analyzing market data..."):
                 try:
                     resp = httpx.post(
                         f"{CONCIERGE_URL}/agents/marketing/insights",
@@ -150,7 +196,7 @@ with tab2:
                     msg_text = msg_parts[0].get("text", "") if msg_parts else ""
 
                     if state == "completed":
-                        st.success("✅ Insights generated and stored in vector database!")
+                        st.success("✅ Insights generated and saved successfully!")
 
                         artifacts = data.get("artifacts", [])
                         insights = []
@@ -165,15 +211,15 @@ with tab2:
                             for category, icon in [("market_trend", "📈"), ("risk_signal", "⚠️"), ("opportunity", "💡")]:
                                 category_items = [i for i in insights if i.get("type") == category]
                                 if category_items:
-                                    st.markdown(f"**{icon} {category.replace('_', ' ').title()}**")
+                                    st.markdown(f"<h5 style='color:#0F172A;margin-top:20px'>{icon} {category.replace('_', ' ').title()}</h5>", unsafe_allow_html=True)
                                     for item in category_items:
-                                        st.markdown(f"- {item['content']}")
+                                        st.markdown(f"<div style='color:#334155;background:white;padding:12px;border-radius:8px;border:1px solid #E2E8F0;margin-bottom:8px'>• {item['content']}</div>", unsafe_allow_html=True)
                         else:
                             st.write(msg_text)
                     else:
                         st.warning(msg_text or "Already processed or failed.")
 
                 except httpx.ConnectError:
-                    st.error("🔌 Cannot connect to Concierge Agent.")
+                    st.error("🔌 Cannot connect to the system. Ensure background services are active.")
                 except Exception as e:
                     st.error(f"Error: {e}")
