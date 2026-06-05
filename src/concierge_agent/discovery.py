@@ -33,3 +33,4 @@ async def get_agent_health() -> Dict[str, bool]:
     for name, url in config.AGENT_REGISTRY.items():
         health[name] = await client.health_check(url)
     return health
+

@@ -9,6 +9,9 @@ set -e
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_ROOT"
 
+# Force UTF-8 encoding for Python to prevent charmap errors on Windows with LLM emojis
+export PYTHONIOENCODING=utf-8
+
 # Ensure .env exists
 if [ ! -f ".env" ]; then
     echo "⚠️  .env not found. Copying .env.example → .env"
