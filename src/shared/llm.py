@@ -43,3 +43,26 @@ def chat_complete(system_prompt: str, user_prompt: str, temperature: float = 0.7
     except Exception as e:
         logger.error(f"LLM call failed: {e}")
         raise
+
+
+def chat_complete_history(system_prompt: str, chat_history: list, temperature: float = 0.7) -> str:
+    """Call Sarvam LLM with a full conversation history"""
+    if not config.SARVAM_API_KEY:
+        logger.warning("SARVAM_API_KEY not set — returning mock LLM response")
+        return f"[MOCK LLM] System: {system_prompt[:80]}... | History Length: {len(chat_history)}"
+
+    client = get_llm_client()
+    messages = [{"role": "system", "content": system_prompt}]
+    messages.extend(chat_history)
+
+    try:
+        response = client.chat.completions.create(
+            model=config.SARVAM_MODEL,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=1024,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        logger.error(f"LLM call failed: {e}")
+        raise
