@@ -133,18 +133,7 @@ with chat_container:
                 badge = intent_labels.get(intent, intent)
                 st.markdown(f'<div class="intent-badge">Routed to: {badge}</div>', unsafe_allow_html=True)
 
-            # Show artifacts
-            if artifacts:
-                with st.expander("📦 Raw Agent Artifacts"):
-                    for art in artifacts:
-                        art_name = art.get("name", "artifact")
-                        parts = art.get("parts", [])
-                        for part in parts:
-                            try:
-                                data = json.loads(part.get("text", "{}"))
-                                st.json(data)
-                            except Exception:
-                                st.text(part.get("text", ""))
+
 
 # ── Input ──────────────────────────────────────────────────────────────────────
 prefill = st.session_state.pop("_prefill", "")
@@ -192,16 +181,7 @@ if user_input:
                     }
                     st.markdown(f'<div class="intent-badge">Routed to: {intent_labels.get(intent, intent)}</div>', unsafe_allow_html=True)
 
-                if artifacts:
-                    with st.expander("📦 View Advanced Details"):
-                        for art in artifacts:
-                            parts = art.get("parts", [])
-                            for part in parts:
-                                try:
-                                    d = json.loads(part.get("text", "{}"))
-                                    st.json(d)
-                                except Exception:
-                                    st.text(part.get("text", ""))
+
 
                 if error:
                     st.warning(f"⚠️ Notice: {error}")
