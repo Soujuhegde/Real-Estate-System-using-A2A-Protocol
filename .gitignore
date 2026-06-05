@@ -1,0 +1,42 @@
+# Environments
+.env
+.venv/
+env/
+venv/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Data & Logs
+data/
+logs/
+*.log
+*.sqlite3
+realestate.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+.gemini/
+.antigravity-ide/
