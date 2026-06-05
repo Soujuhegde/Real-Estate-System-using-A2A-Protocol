@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from pydantic import BaseModel
+from typing import Optional
 
 from shared.a2a_models import AgentCard, AgentSkill
 from shared.a2a_client import A2AClient
@@ -90,7 +91,7 @@ class ChatResponse(BaseModel):
     response: str
     intent: str
     artifacts: list = []
-    error: str = None
+    error: Optional[str] = None
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -98,8 +99,9 @@ async def chat(request: ChatRequest):
     """Main endpoint: natural language → LangGraph → response"""
     logger.info(f"[Session {request.session_id}] User: {request.message[:120]}")
 
-    initial_state: OrchestratorState = {
+    initial_state = {
         "user_input": request.message,
+        "chat_history": [{"role": "user", "content": request.message}],
         "intent": "",
         "extracted_payload": {},
         "agent_response": None,
