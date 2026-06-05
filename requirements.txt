@@ -1,0 +1,28 @@
+# ── Core Web Framework ────────────────────────────────────────────────────────
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+httpx==0.28.1
+pydantic==2.10.3
+
+# ── LLM & AI ─────────────────────────────────────────────────────────────────
+openai==1.57.2                      # Sarvam AI is OpenAI-compatible
+langchain==0.3.10
+langchain-core==0.3.25
+langgraph==0.2.56
+langchain-openai==0.2.12
+
+# ── Embeddings ────────────────────────────────────────────────────────────────
+sentence-transformers==3.3.1
+torch==2.5.1                        # Required by sentence-transformers
+
+# ── Vector DB ─────────────────────────────────────────────────────────────────
+pinecone==5.4.2                     # Pinecone client v3+
+
+# ── Database ─────────────────────────────────────────────────────────────────
+# SQLite is built into Python — no extra package needed
+
+# ── Frontend ─────────────────────────────────────────────────────────────────
+streamlit==1.41.1
+
+# ── Utilities ────────────────────────────────────────────────────────────────
+python-dotenv==1.0.1
