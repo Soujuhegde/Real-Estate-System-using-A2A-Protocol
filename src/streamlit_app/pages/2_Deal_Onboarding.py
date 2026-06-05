@@ -155,9 +155,7 @@ if submitted:
 
                     st.info("🔄 We are automatically generating market insights for this property in the background. Check the Market Insights page shortly.")
 
-                    with st.expander("📋 View Advanced Details"):
-                        st.write(msg_text)
-                        st.json(payload)
+
                 else:
                     st.error(f"❌ Listing failed: {msg_text or data.get('status', {}).get('error', 'Unknown error')}")
 
