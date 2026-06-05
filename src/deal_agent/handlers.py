@@ -6,6 +6,7 @@ import json
 import logging
 from typing import List, Dict, Any
 from shared.db import get_conn
+from shared.llm import analyze_property_image
 
 logger = logging.getLogger("deal_agent.handlers")
 
@@ -73,11 +74,30 @@ def onboard_property(data: Dict[str, Any]) -> str:
             return existing["property_id"]
 
         property_id = f"PROP-{str(uuid.uuid4())[:8].upper()}"
-        amenities = (
-            json.dumps(data["amenities"])
-            if isinstance(data.get("amenities"), list)
-            else data.get("amenities", "[]")
-        )
+        
+        # Base amenities
+        user_amenities = data.get("amenities", [])
+        if not isinstance(user_amenities, list):
+            user_amenities = []
+            
+        ai_description = ""
+        
+        # Process Vision AI if image is provided
+        if "image_base64" in data:
+            vision_result = analyze_property_image(data["image_base64"])
+            extracted = vision_result.get("extracted_amenities", [])
+            ai_description = vision_result.get("marketing_description", "")
+            
+            # Merge amenities uniquely
+            if isinstance(extracted, list):
+                user_amenities = list(set(user_amenities + extracted))
+                
+            data["ai_description"] = ai_description
+            
+            # Remove base64 string before saving raw_json to save space
+            del data["image_base64"]
+
+        amenities_json = json.dumps(user_amenities)
 
         conn.execute(
             """INSERT INTO properties
@@ -94,13 +114,31 @@ def onboard_property(data: Dict[str, Any]) -> str:
                 float(data.get("area_sqft") or 0),
                 int(data.get("bedrooms") or 0),
                 int(data.get("bathrooms") or 0),
-                amenities,
+                amenities_json,
                 data.get("owner_name", ""),
                 data.get("owner_contact", ""),
                 json.dumps(data),
             ),
         )
         logger.info(f"New property onboarded: {property_id}")
+        
+        # Proactive Matchmaking
+        from shared.config import CUSTOMER_AGENT_URL
+        import httpx
+        import asyncio
+        
+        def _trigger_match():
+            try:
+                # We do this synchronously or via fire-and-forget in real life, 
+                # but since we are inside a sync function here, we just use sync httpx
+                resp = httpx.post(f"{CUSTOMER_AGENT_URL}/match", json=data, timeout=5.0)
+                logger.info(f"Matchmaking triggered: {resp.json()}")
+            except Exception as e:
+                logger.error(f"Failed to trigger matchmaking: {e}")
+                
+        # Since onboard_property is synchronous, we just do it inline
+        _trigger_match()
+        
         return property_id
 
 

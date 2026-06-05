@@ -4,8 +4,14 @@ Page 2: Deal (Property) Onboarding
 import streamlit as st
 import httpx
 import json
+import base64
+
+import sys
+sys.path.append('src/streamlit_app')
+from auth import require_auth
 
 st.set_page_config(page_title="Property Onboarding", page_icon="🏘️", layout="wide")
+require_auth()
 
 # Inject Global CSS
 st.markdown("""
@@ -88,6 +94,14 @@ with st.container():
         )
 
         st.markdown("<hr style='margin:20px 0;border-color:#F1F5F9'>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color:#334155'>Property Media (Vision AI)</h4>", unsafe_allow_html=True)
+        st.info("Upload a photo of the property. Our Vision AI will automatically analyze it to detect amenities and generate a marketing description.")
+        uploaded_image = st.file_uploader("Upload Property Image", type=["jpg", "jpeg", "png"])
+
+        if uploaded_image:
+            st.image(uploaded_image, caption="Property Preview", use_container_width=True)
+
+        st.markdown("<hr style='margin:20px 0;border-color:#F1F5F9'>", unsafe_allow_html=True)
         st.markdown("<h4 style='color:#334155'>Owner Contact</h4>", unsafe_allow_html=True)
         col3, col4 = st.columns(2)
         with col3:
@@ -117,6 +131,10 @@ if submitted:
             "owner_name": owner_name,
             "owner_contact": owner_contact,
         }
+
+        if uploaded_image is not None:
+            img_bytes = uploaded_image.getvalue()
+            payload["image_base64"] = base64.b64encode(img_bytes).decode('utf-8')
 
         with st.spinner("Saving property details..."):
             try:

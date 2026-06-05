@@ -158,9 +158,11 @@ if user_input:
     with st.chat_message("assistant", avatar="💬"):
         with st.spinner("Thinking..."):
             try:
+                user_email = st.session_state.get("user_email", "unknown")
+                enriched_input = f"[Investor: {user_email}] {user_input}"
                 resp = httpx.post(
                     f"{CONCIERGE_URL}/chat",
-                    json={"message": user_input, "session_id": st.session_state.session_id},
+                    json={"message": enriched_input, "session_id": st.session_state.session_id},
                     timeout=30.0,
                 )
                 resp.raise_for_status()

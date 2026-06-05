@@ -7,11 +7,16 @@ import httpx
 from datetime import datetime
 
 # ── Page Config ───────────────────────────────────────────────────────────────
+import sys
+sys.path.append('src/streamlit_app')
+from auth import require_auth
+
 st.set_page_config(
     page_title="Nexura Home",
     page_icon="🏠",
     layout="wide",
 )
+require_auth()
 
 # ── Config ────────────────────────────────────────────────────────────────────
 CONCIERGE_URL = "http://localhost:8000"

@@ -4,8 +4,17 @@ Page 3: Market Intelligence — RAG Query & Insight Generation
 import streamlit as st
 import httpx
 import json
+import sqlite3
+import pandas as pd
+import plotly.express as px
+from shared import config
+
+import sys
+sys.path.append('src/streamlit_app')
+from auth import require_auth
 
 st.set_page_config(page_title="Market Intelligence", page_icon="📊", layout="wide")
+require_auth()
 
 # Inject Global CSS
 st.markdown("""
@@ -51,7 +60,7 @@ st.divider()
 st.markdown('<div class="page-header">📊 Market Insights</div>', unsafe_allow_html=True)
 st.markdown('<div class="page-sub">Search through our market data or generate new insights for a property.</div>', unsafe_allow_html=True)
 
-tab1, tab2 = st.tabs(["🔍 Search Insights", "⚡ Generate Insights"])
+tab1, tab2, tab3 = st.tabs(["🔍 Search Insights", "⚡ Generate Insights", "📈 Market Analytics"])
 
 # ── Tab 1: Search ─────────────────────────────────────────────────────────────
 with tab1:
@@ -223,3 +232,39 @@ with tab2:
                     st.error("🔌 Cannot connect to the system. Ensure background services are active.")
                 except Exception as e:
                     st.error(f"Error: {e}")
+
+# ── Tab 3: Market Analytics ───────────────────────────────────────────────────
+with tab3:
+    st.markdown("<br>", unsafe_allow_html=True)
+    with st.container():
+        st.markdown('<div class="form-container">', unsafe_allow_html=True)
+        st.markdown("<h4 style='margin-top:0;color:#334155'>Global Market Overview</h4>", unsafe_allow_html=True)
+        
+        try:
+            conn = sqlite3.connect(config.DB_PATH)
+            df = pd.read_sql_query("SELECT property_id, title, location, property_type, price, area_sqft, bedrooms FROM properties", conn)
+            conn.close()
+            
+            if df.empty:
+                st.info("No property data available yet. Please onboard some properties first.")
+            else:
+                colA, colB = st.columns(2)
+                
+                with colA:
+                    fig1 = px.scatter(df, x="area_sqft", y="price", color="property_type", hover_data=["title", "location"], title="Price vs. Area (sq.ft)")
+                    fig1.update_layout(margin=dict(l=20, r=20, t=40, b=20))
+                    st.plotly_chart(fig1, use_container_width=True)
+                    
+                with colB:
+                    loc_counts = df.groupby("location").size().reset_index(name="count")
+                    fig2 = px.bar(loc_counts, x="location", y="count", color="location", title="Properties by Location")
+                    fig2.update_layout(margin=dict(l=20, r=20, t=40, b=20), showlegend=False)
+                    st.plotly_chart(fig2, use_container_width=True)
+                    
+                st.markdown("<h5 style='color:#334155; margin-top: 20px;'>Raw Market Data</h5>", unsafe_allow_html=True)
+                st.dataframe(df, use_container_width=True)
+                
+        except Exception as e:
+            st.error(f"Failed to load market analytics: {e}")
+            
+        st.markdown('</div>', unsafe_allow_html=True)

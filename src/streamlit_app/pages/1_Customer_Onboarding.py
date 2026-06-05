@@ -5,7 +5,12 @@ import streamlit as st
 import httpx
 import json
 
+import sys
+sys.path.append('src/streamlit_app')
+from auth import require_auth
+
 st.set_page_config(page_title="Customer Onboarding", page_icon="👤", layout="wide")
+require_auth()
 
 # Inject Global CSS
 st.markdown("""

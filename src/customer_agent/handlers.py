@@ -96,3 +96,41 @@ def get_customer(customer_id: str) -> Dict[str, Any]:
             "SELECT * FROM customers WHERE customer_id = ?", (customer_id,)
         ).fetchone()
         return dict(row) if row else {}
+
+
+def find_matches(property_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    price = float(property_data.get("price", 0))
+    location = str(property_data.get("location", "")).lower()
+    matches = []
+    
+    with get_conn() as conn:
+        # Match budget
+        rows = conn.execute(
+            "SELECT * FROM customers WHERE budget_min <= ? AND budget_max >= ?", 
+            (price, price)
+        ).fetchall()
+        
+        for row in rows:
+            cust = dict(row)
+            try:
+                prefs = json.loads(cust.get("preferred_locations", "[]"))
+                prefs = [str(p).lower() for p in prefs]
+            except Exception:
+                prefs = []
+            
+            # Match location
+            is_match = False
+            if not prefs:
+                is_match = True
+            else:
+                for p in prefs:
+                    if p in location or location in p:
+                        is_match = True
+                        break
+            
+            if is_match:
+                matches.append(cust)
+                logger.info(f"🔔 MATCH FOUND: {cust['full_name']} ({cust['email']}) matches property '{property_data.get('title')}'")
+                logger.info(f"📧 Sending Mock Notification to {cust['email']} for {property_data.get('title')}.")
+                
+    return matches

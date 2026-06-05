@@ -11,6 +11,9 @@ SARVAM_API_KEY: str = os.getenv("SARVAM_API_KEY", "")
 SARVAM_BASE_URL: str = os.getenv("SARVAM_BASE_URL", "https://api.sarvam.ai/v1")
 SARVAM_MODEL: str = os.getenv("SARVAM_MODEL", "sarvam-m")
 
+# ── Vision API (Gemini) ──────────────────────────────────────────────────────
+GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+
 # ── Vector DB (Pinecone) ─────────────────────────────────────────────────────
 PINECONE_API_KEY: str = os.getenv("PINECONE_API_KEY", "")
 PINECONE_INDEX_NAME: str = os.getenv("PINECONE_INDEX_NAME", "realestate-insights")
