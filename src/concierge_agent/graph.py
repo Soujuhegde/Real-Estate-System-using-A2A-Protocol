@@ -4,12 +4,13 @@ Flow: classify_intent → route → specialist_agent → aggregate_response
 """
 import logging
 import json
-from typing import Optional, TypedDict, Literal
+import operator
+from typing import Optional, TypedDict, Literal, Annotated
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 from shared.a2a_client import A2AClient
 from shared import config
-from shared.llm import chat_complete
+from shared.llm import chat_complete, chat_complete_history
 
 logger = logging.getLogger("concierge.graph")
 
@@ -18,6 +19,7 @@ logger = logging.getLogger("concierge.graph")
 
 class OrchestratorState(TypedDict):
     user_input: str
+    chat_history: Annotated[list, operator.add]
     intent: str                          # "customer_onboarding" | "deal_onboarding" | "market_insights" | "unknown"
     extracted_payload: dict              # Structured data extracted from user input
     agent_response: Optional[str]        # Raw response from specialist agent
@@ -33,20 +35,29 @@ INTENT_SYSTEM = """You are an intent classifier for a real estate AI platform.
 Classify the user's request into exactly one of:
 - customer_onboarding  (user wants to register as buyer/investor)
 - deal_onboarding      (user wants to list/add a property)
-- market_insights      (user wants analysis, trends, ROI, or insights for a property)
-- unknown              (cannot determine)
+- market_insights      (user asks about property prices, market trends, ROI, risks, or any general real estate questions)
+- unknown              (only if the request is completely unrelated to real estate)
 
 Also extract any structured data from the input as JSON.
 
-Respond ONLY with JSON: {"intent": "<intent>", "payload": {<extracted fields>}}
+CRITICAL: Respond ONLY with a valid JSON object. No markdown, no conversational text.
+Format: {"intent": "<intent>", "payload": {<extracted fields>}}
 """
 
 
 def classify_intent_node(state: OrchestratorState) -> OrchestratorState:
     logger.info("Node: classify_intent")
     user_input = state["user_input"]
+    history = state.get("chat_history", [])
+    
+    # We construct a prompt with the user input at the end of the history
+    # If there's history, we use chat_complete_history. Otherwise, regular.
     try:
-        raw = chat_complete(INTENT_SYSTEM, user_input, temperature=0.1)
+        if len(history) > 1: # Greater than 1 because it includes the current user input
+            raw = chat_complete_history(INTENT_SYSTEM, history, temperature=0.1)
+        else:
+            raw = chat_complete(INTENT_SYSTEM, user_input, temperature=0.1)
+            
         raw = raw.strip()
         if raw.startswith("```"):
             raw = raw.split("```")[1]
@@ -61,7 +72,7 @@ def classify_intent_node(state: OrchestratorState) -> OrchestratorState:
         payload = {}
 
     logger.info(f"Intent classified: {intent} | Payload keys: {list(payload.keys())}")
-    return {**state, "intent": intent, "extracted_payload": payload}
+    return {"intent": intent, "extracted_payload": payload}
 
 
 async def onboard_customer_node(state: OrchestratorState) -> OrchestratorState:
@@ -76,10 +87,10 @@ async def onboard_customer_node(state: OrchestratorState) -> OrchestratorState:
         msg = resp.status.message.text() if resp.status.message else ""
         artifacts = [a.model_dump() for a in (resp.artifacts or [])]
         if resp.status.state == "failed":
-            return {**state, "error": resp.status.error or msg, "agent_response": msg}
-        return {**state, "agent_response": msg, "agent_artifacts": artifacts}
+            return {"error": resp.status.error or msg, "agent_response": msg}
+        return {"agent_response": msg, "agent_artifacts": artifacts}
     except Exception as e:
-        return {**state, "error": str(e)}
+        return {"error": str(e)}
 
 
 async def onboard_deal_node(state: OrchestratorState) -> OrchestratorState:
@@ -94,10 +105,10 @@ async def onboard_deal_node(state: OrchestratorState) -> OrchestratorState:
         msg = resp.status.message.text() if resp.status.message else ""
         artifacts = [a.model_dump() for a in (resp.artifacts or [])]
         if resp.status.state == "failed":
-            return {**state, "error": resp.status.error or msg, "agent_response": msg}
-        return {**state, "agent_response": msg, "agent_artifacts": artifacts}
+            return {"error": resp.status.error or msg, "agent_response": msg}
+        return {"agent_response": msg, "agent_artifacts": artifacts}
     except Exception as e:
-        return {**state, "error": str(e)}
+        return {"error": str(e)}
 
 
 async def query_insights_node(state: OrchestratorState) -> OrchestratorState:
@@ -113,9 +124,9 @@ async def query_insights_node(state: OrchestratorState) -> OrchestratorState:
         )
         msg = resp.status.message.text() if resp.status.message else ""
         artifacts = [a.model_dump() for a in (resp.artifacts or [])]
-        return {**state, "agent_response": msg, "rag_context": msg, "agent_artifacts": artifacts}
+        return {"agent_response": msg, "rag_context": msg, "agent_artifacts": artifacts}
     except Exception as e:
-        return {**state, "error": str(e)}
+        return {"error": str(e)}
 
 
 SYNTHESIS_SYSTEM = """You are a helpful real estate concierge AI.
@@ -126,26 +137,28 @@ Do NOT mention internal agent names or technical details."""
 
 def generate_response_node(state: OrchestratorState) -> OrchestratorState:
     logger.info("Node: generate_response")
+    history = state.get("chat_history", [])
+    
     if state.get("error"):
         final = f"I encountered an issue processing your request: {state['error']}. Please check your input and try again."
-        return {**state, "final_response": final}
+        return {"final_response": final, "chat_history": [{"role": "assistant", "content": final}]}
 
     agent_resp = state.get("agent_response", "")
     rag_ctx = state.get("rag_context", "")
     context = rag_ctx or agent_resp
 
-    user_prompt = f"""User asked: {state['user_input']}
-
-Agent response: {context}
-
-Generate a helpful, professional reply."""
+    user_prompt = f"Agent Backend Context/Response:\n{context}\n\nPlease generate a natural reply to the user."
+    
+    # We build a temporary history to pass to the LLM including the context
+    temp_history = history.copy()
+    temp_history.append({"role": "user", "content": user_prompt})
 
     try:
-        final = chat_complete(SYNTHESIS_SYSTEM, user_prompt, temperature=0.5)
+        final = chat_complete_history(SYNTHESIS_SYSTEM, temp_history, temperature=0.5)
     except Exception:
         final = agent_resp or "Your request has been processed."
 
-    return {**state, "final_response": final}
+    return {"final_response": final, "chat_history": [{"role": "assistant", "content": final}]}
 
 
 def handle_unknown_node(state: OrchestratorState) -> OrchestratorState:
@@ -157,7 +170,7 @@ def handle_unknown_node(state: OrchestratorState) -> OrchestratorState:
         "• **Market insights** — ask about trends, ROI, or risks for a specific property or area\n\n"
         "What would you like to do?"
     )
-    return {**state, "final_response": final}
+    return {"final_response": final, "chat_history": [{"role": "assistant", "content": final}]}
 
 
 # ── Routing ───────────────────────────────────────────────────────────────────
