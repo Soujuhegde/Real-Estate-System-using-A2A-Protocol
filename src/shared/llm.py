@@ -30,7 +30,7 @@ def get_llm_client() -> OpenAI:
     return _client
 
 
-def chat_complete(system_prompt: str, user_prompt: str, temperature: float = 0.7) -> str:
+def chat_complete(system_prompt: str, user_prompt: str, temperature: float = 0.7, json_mode: bool = False) -> str:
     """Call Sarvam LLM and return text response"""
     if not config.SARVAM_API_KEY:
         logger.warning("SARVAM_API_KEY not set — returning mock LLM response")
@@ -38,15 +38,19 @@ def chat_complete(system_prompt: str, user_prompt: str, temperature: float = 0.7
 
     client = get_llm_client()
     try:
-        response = client.chat.completions.create(
-            model=config.SARVAM_MODEL,
-            messages=[
+        kwargs = {
+            "model": config.SARVAM_MODEL,
+            "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            temperature=temperature,
-            max_tokens=4096,
-        )
+            "temperature": temperature,
+            "max_tokens": 4096,
+        }
+        if json_mode:
+            kwargs["response_format"] = {"type": "json_object"}
+            
+        response = client.chat.completions.create(**kwargs)
         msg = response.choices[0].message
         content = msg.content or getattr(msg, 'reasoning_content', '') or ''
         return content.strip()
