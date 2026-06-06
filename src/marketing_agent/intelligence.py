@@ -7,7 +7,16 @@ import json
 from typing import List, Dict, Any
 from shared.llm import chat_complete
 
+from pydantic import BaseModel, Field, ValidationError
+
 logger = logging.getLogger("marketing_agent.intelligence")
+
+class InsightItem(BaseModel):
+    type: str = Field(description="Must be market_trend, risk_signal, or opportunity")
+    content: str
+
+class InsightsResponse(BaseModel):
+    insights: List[InsightItem]
 
 SYSTEM_PROMPT = """You are a senior real estate market intelligence analyst in India.
 You analyze property data and produce actionable insights in three categories:
@@ -15,11 +24,10 @@ You analyze property data and produce actionable insights in three categories:
 2. risk_signal    - Oversupply, legal issues, low demand, liquidity risk, negative indicators
 3. opportunity    - ROI potential, rental yield estimate, target buyer segment, growth catalyst
 
-Always respond ONLY with a valid JSON array. No markdown, no prose outside the JSON.
-Each element: {"type": "market_trend|risk_signal|opportunity", "content": "<clear sentence>"}
+Always respond ONLY with a valid JSON object matching this schema:
+{"insights": [{"type": "market_trend|risk_signal|opportunity", "content": "<clear sentence>"}]}
 Produce exactly 2 insights per type (6 total).
 """
-
 
 def generate_insights(property_data: Dict[str, Any]) -> List[Dict[str, str]]:
     """Use LLM to generate structured market insights for a property"""
@@ -35,25 +43,22 @@ Bedrooms: {property_data.get('bedrooms', 'N/A')}
 Amenities: {property_data.get('amenities', [])}
 
 Generate 6 insights (2 market_trend, 2 risk_signal, 2 opportunity).
-Return ONLY a JSON array."""
+Return ONLY a JSON object."""
 
     try:
-        raw = chat_complete(SYSTEM_PROMPT, user_prompt, temperature=0.7)
+        raw = chat_complete(SYSTEM_PROMPT, user_prompt, temperature=0.7, json_mode=True)
         # Strip markdown fences if present
         raw = raw.strip()
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):
                 raw = raw[4:]
-        insights = json.loads(raw.strip())
-        # Validate structure
-        validated = []
-        for item in insights:
-            if "type" in item and "content" in item:
-                validated.append({"type": item["type"], "content": item["content"]})
+        
+        parsed_response = InsightsResponse.model_validate_json(raw.strip())
+        validated = [{"type": i.type, "content": i.content} for i in parsed_response.insights]
         logger.info(f"Generated {len(validated)} insights via LLM")
         return validated
-    except (json.JSONDecodeError, Exception) as e:
+    except (ValidationError, json.JSONDecodeError, Exception) as e:
         logger.warning(f"LLM insight parse failed: {e}. Using synthetic fallback.")
         return _synthetic_insights(property_data)
 
