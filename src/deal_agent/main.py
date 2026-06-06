@@ -73,7 +73,13 @@ async def health():
     return {"status": "ok", "agent": "deal_onboarding"}
 
 
-@app.post("/tasks/send", response_model=A2ATaskResponse)
+from fastapi import FastAPI, HTTPException, Depends, Header
+
+async def verify_token(x_internal_token: str = Header(None)):
+    if x_internal_token != config.INTERNAL_API_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid Internal API Token")
+
+@app.post("/tasks/send", response_model=A2ATaskResponse, dependencies=[Depends(verify_token)])
 async def handle_task(request: A2ATaskRequest):
     task_id = request.id
     user_text = request.message.parts[0].text if request.message.parts else ""
@@ -101,8 +107,9 @@ async def handle_task(request: A2ATaskRequest):
         _log_event("PROPERTY_ONBOARDED", {"property_id": property_id}, "success")
         logger.info(f"Property {property_id} onboarded. Triggering marketing agent...")
 
-        # Async fire-and-forget to Marketing Agent
+        # Async fire-and-forget to Marketing Agent and Matchmaking
         asyncio.create_task(_trigger_marketing(property_id, payload))
+        asyncio.create_task(_trigger_match_async(payload))
 
         artifact_data = json.dumps({"property_id": property_id, "status": "onboarded"})
         return A2ATaskResponse(
@@ -147,6 +154,18 @@ async def _trigger_marketing(property_id: str, property_data: dict):
     except Exception as e:
         logger.warning(f"Failed to trigger marketing agent for {property_id}: {e}")
         _log_event("MARKETING_TRIGGER_FAILED", {"property_id": property_id, "error": str(e)}, "failed")
+
+import httpx
+async def _trigger_match_async(property_data: dict):
+    """Fire-and-forget: notify customer agent to perform matchmaking"""
+    try:
+        from shared.config import CUSTOMER_AGENT_URL, INTERNAL_API_TOKEN
+        headers = {"X-Internal-Token": INTERNAL_API_TOKEN}
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(f"{CUSTOMER_AGENT_URL}/match", json=property_data, headers=headers, timeout=5.0)
+            logger.info(f"Matchmaking triggered: {resp.json()}")
+    except Exception as e:
+        logger.error(f"Failed to trigger matchmaking: {e}")
 
 
 def _log_event(event_type: str, payload: dict, status: str):
