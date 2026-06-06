@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import json
 import logging
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from pydantic import BaseModel
@@ -23,6 +23,10 @@ from .discovery import discover_all_agents
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
 logger = logging.getLogger("concierge")
+
+async def verify_token(x_internal_token: str = Header(None)):
+    if x_internal_token != config.INTERNAL_API_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid Internal API Token")
 
 app = FastAPI(title="Concierge Orchestrator Agent", version="1.0.0")
 app.add_middleware(
@@ -94,7 +98,7 @@ class ChatResponse(BaseModel):
     error: Optional[str] = None
 
 
-@app.post("/chat", response_model=ChatResponse)
+@app.post("/chat", response_model=ChatResponse, dependencies=[Depends(verify_token)])
 async def chat(request: ChatRequest):
     """Main endpoint: natural language → LangGraph → response"""
     logger.info(f"[Session {request.session_id}] User: {request.message[:120]}")
@@ -132,21 +136,21 @@ class DirectTaskRequest(BaseModel):
     payload: dict
 
 
-@app.post("/agents/customer/onboard")
+@app.post("/agents/customer/onboard", dependencies=[Depends(verify_token)])
 async def direct_customer_onboard(request: DirectTaskRequest):
     client = A2AClient()
     resp = await client.send_task(config.CUSTOMER_AGENT_URL, json.dumps(request.payload))
     return resp.model_dump()
 
 
-@app.post("/agents/deal/onboard")
+@app.post("/agents/deal/onboard", dependencies=[Depends(verify_token)])
 async def direct_deal_onboard(request: DirectTaskRequest):
     client = A2AClient()
     resp = await client.send_task(config.DEAL_AGENT_URL, json.dumps(request.payload))
     return resp.model_dump()
 
 
-@app.post("/agents/marketing/insights")
+@app.post("/agents/marketing/insights", dependencies=[Depends(verify_token)])
 async def direct_marketing_insights(request: DirectTaskRequest):
     client = A2AClient()
     resp = await client.send_task(config.MARKETING_AGENT_URL, json.dumps(request.payload))

@@ -77,7 +77,14 @@ async def health():
     return {"status": "ok", "agent": "marketing_intelligence"}
 
 
-@app.post("/tasks/send", response_model=A2ATaskResponse)
+from fastapi import FastAPI, HTTPException, Depends, Header
+from shared import config
+
+async def verify_token(x_internal_token: str = Header(None)):
+    if x_internal_token != config.INTERNAL_API_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid Internal API Token")
+
+@app.post("/tasks/send", response_model=A2ATaskResponse, dependencies=[Depends(verify_token)])
 async def handle_task(request: A2ATaskRequest):
     task_id = request.id
     user_text = request.message.parts[0].text if request.message.parts else ""
