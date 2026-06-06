@@ -122,23 +122,6 @@ def onboard_property(data: Dict[str, Any]) -> str:
         )
         logger.info(f"New property onboarded: {property_id}")
         
-        # Proactive Matchmaking
-        from shared.config import CUSTOMER_AGENT_URL
-        import httpx
-        import asyncio
-        
-        def _trigger_match():
-            try:
-                # We do this synchronously or via fire-and-forget in real life, 
-                # but since we are inside a sync function here, we just use sync httpx
-                resp = httpx.post(f"{CUSTOMER_AGENT_URL}/match", json=data, timeout=5.0)
-                logger.info(f"Matchmaking triggered: {resp.json()}")
-            except Exception as e:
-                logger.error(f"Failed to trigger matchmaking: {e}")
-                
-        # Since onboard_property is synchronous, we just do it inline
-        _trigger_match()
-        
         return property_id
 
 
