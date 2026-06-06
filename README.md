@@ -384,33 +384,11 @@ done
 
 ---
 
-## 8. Security & Best Practices
 
-| Concern | Implementation |
-|---|---|
-| API key management | `.env` file, never committed. Template in `.env.example` |
-| Input validation | Pydantic models + explicit validation in each agent handler |
-| Duplicate prevention | Email dedup (customers), title+location dedup (properties), property_id check (embeddings) |
-| Error isolation | Each agent catches and returns structured A2A error responses |
-| Observability | All events logged to `agent_logs` table in SQLite + stdout logs |
-| CORS | Concierge has open CORS for local dev — restrict in production |
-| Async safety | SQLite accessed with `check_same_thread=False` + connection-per-request pattern |
-
-### Production Hardening Checklist
-
-- [x] Add Internal API Token security on all agent endpoints
-- [x] Asynchronous background task execution for heavy ML matchmaking
-- [x] Strict JSON schema validation for LLM outputs
-- [ ] Replace SQLite with PostgreSQL
-- [ ] Add JWT auth on all user-facing endpoints
-- [ ] Rate limit `/chat` endpoint (e.g. 60 req/min)
-- [ ] Run each agent in Docker container
-- [ ] Add Prometheus metrics middleware
-- [ ] Restrict CORS to known frontend origin
 
 ---
 
-## 9. LangGraph Workflow Detail
+## 8. LangGraph Workflow Detail
 
 ```python
 # State flows through these nodes:
@@ -429,7 +407,7 @@ is non-blocking.
 
 ---
 
-## 10. Troubleshooting
+## 9. Troubleshooting
 
 | Problem | Fix |
 |---|---|
