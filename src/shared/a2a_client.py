@@ -10,6 +10,8 @@ from .a2a_models import A2ATaskRequest, A2ATaskResponse, A2AMessage, AgentCard
 logger = logging.getLogger(__name__)
 
 
+from . import config
+
 class A2AClient:
     def __init__(self, timeout: float = 30.0):
         self.timeout = timeout
@@ -17,7 +19,8 @@ class A2AClient:
     async def discover(self, agent_url: str) -> Optional[AgentCard]:
         """Fetch an agent's Agent Card from /.well-known/agent.json"""
         url = f"{agent_url.rstrip('/')}/.well-known/agent.json"
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
+        headers = {"X-Internal-Token": config.INTERNAL_API_TOKEN}
+        async with httpx.AsyncClient(timeout=self.timeout, headers=headers) as client:
             try:
                 resp = await client.get(url)
                 resp.raise_for_status()
@@ -38,7 +41,8 @@ class A2AClient:
             message=A2AMessage.user(message_text),
             metadata=metadata or {},
         )
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
+        headers = {"X-Internal-Token": config.INTERNAL_API_TOKEN}
+        async with httpx.AsyncClient(timeout=self.timeout, headers=headers) as client:
             try:
                 resp = await client.post(endpoint, json=request.model_dump())
                 resp.raise_for_status()
@@ -52,7 +56,8 @@ class A2AClient:
 
     async def health_check(self, agent_url: str) -> bool:
         """Check if an agent is reachable"""
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        headers = {"X-Internal-Token": config.INTERNAL_API_TOKEN}
+        async with httpx.AsyncClient(timeout=5.0, headers=headers) as client:
             try:
                 resp = await client.get(f"{agent_url.rstrip('/')}/health")
                 return resp.status_code == 200
