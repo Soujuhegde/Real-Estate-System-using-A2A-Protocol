@@ -70,7 +70,6 @@ tab1, tab2, tab3 = st.tabs(["🔍 Search Insights", "⚡ Generate Insights", "�
 with tab1:
     st.markdown("<br>", unsafe_allow_html=True)
     with st.container():
-        st.markdown('<div class="form-container">', unsafe_allow_html=True)
         st.markdown("<h4 style='margin-top:0;color:#334155'>Search Market Data</h4>", unsafe_allow_html=True)
         st.markdown("<p style='color:#64748B;font-size:0.95rem'>Ask any question — we will find the most relevant market insights for you.</p>", unsafe_allow_html=True)
 
@@ -86,7 +85,6 @@ with tab1:
             )
             st.markdown("<br>", unsafe_allow_html=True)
             submitted = st.form_submit_button("🔍 Search Knowledge Base", type="primary", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
 
     if submitted and query:
         payload: dict = {"query": query}
@@ -175,7 +173,6 @@ with tab1:
 with tab2:
     st.markdown("<br>", unsafe_allow_html=True)
     with st.container():
-        st.markdown('<div class="form-container">', unsafe_allow_html=True)
         st.markdown("<h4 style='margin-top:0;color:#334155'>Manually Trigger Analysis</h4>", unsafe_allow_html=True)
         
         with st.form("generate_form", clear_on_submit=False):
@@ -189,7 +186,6 @@ with tab2:
 
             st.markdown("<br>", unsafe_allow_html=True)
             gen_submitted = st.form_submit_button("⚡ Synthesize Insights", type="primary", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
 
     if gen_submitted:
         if not property_id or not location:
@@ -256,7 +252,6 @@ with tab2:
 with tab3:
     st.markdown("<br>", unsafe_allow_html=True)
     with st.container():
-        st.markdown('<div class="form-container">', unsafe_allow_html=True)
         st.markdown("<h4 style='margin-top:0;color:#334155'>Global Market Overview</h4>", unsafe_allow_html=True)
         
         try:
@@ -286,4 +281,3 @@ with tab3:
         except Exception as e:
             st.error(f"Failed to load market analytics: {e}")
             
-        st.markdown('</div>', unsafe_allow_html=True)

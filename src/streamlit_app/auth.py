@@ -22,18 +22,32 @@ def require_auth():
         </style>
         """, unsafe_allow_html=True)
 
-        st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        st.markdown("### 🔐 Nexura Secure Login")
-        st.markdown("<p style='color:#64748B;font-size:0.9rem;margin-bottom:20px'>Please log in to access your personalized dashboard and Concierge.</p>", unsafe_allow_html=True)
+        _, col, _ = st.columns([1, 2, 1])
         
-        email = st.text_input("Investor Email", placeholder="investor@example.com", label_visibility="collapsed")
-        
-        if st.button("Access Dashboard 🚀", type="primary", use_container_width=True):
-            if email.strip() and "@" in email:
-                st.session_state["user_email"] = email.strip()
-                st.rerun()
-            else:
-                st.error("Please enter a valid email address.")
-                
-        st.markdown('</div>', unsafe_allow_html=True)
+        with col:
+            st.markdown("""
+            <style>
+                .stTextInput > div > div > input {
+                    border-radius: 8px;
+                }
+                .stButton > button {
+                    border-radius: 8px;
+                    font-weight: 600;
+                }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("<br><br><br>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center;'>🔐 Nexura Secure Login</h2>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color:#64748B; font-size:0.95rem; margin-bottom:30px'>Please log in to access your personalized dashboard and Concierge.</p>", unsafe_allow_html=True)
+            
+            email = st.text_input("Investor Email", placeholder="investor@example.com", label_visibility="collapsed")
+            
+            if st.button("Access Dashboard 🚀", type="primary", use_container_width=True):
+                if email.strip() and "@" in email:
+                    st.session_state["user_email"] = email.strip()
+                    st.rerun()
+                else:
+                    st.error("Please enter a valid email address.")
+            st.markdown("<br><br><br>", unsafe_allow_html=True)
         st.stop()

@@ -63,7 +63,6 @@ st.markdown('<div class="page-header">👤 Client Registration</div>', unsafe_al
 st.markdown('<div class="page-sub">Add a new buyer or investor profile to your database.</div>', unsafe_allow_html=True)
 
 with st.container():
-    st.markdown('<div class="form-container">', unsafe_allow_html=True)
     with st.form("customer_form", clear_on_submit=False):
         st.markdown("<h4 style='margin-top:0;color:#334155'>Personal Information</h4>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns(3)
@@ -98,7 +97,6 @@ with st.container():
 
         st.markdown("<br>", unsafe_allow_html=True)
         submitted = st.form_submit_button("🚀 Securely Register Client", type="primary", use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 if submitted:
     if not all([full_name, email, buyer_type]):

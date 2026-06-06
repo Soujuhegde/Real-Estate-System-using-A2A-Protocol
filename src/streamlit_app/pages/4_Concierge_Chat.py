@@ -158,13 +158,11 @@ if user_input:
     with st.chat_message("assistant", avatar="💬"):
         with st.spinner("Thinking..."):
             try:
-                user_email = st.session_state.get("user_email", "unknown")
-                enriched_input = f"[Investor: {user_email}] {user_input}"
                 from shared import config
                 headers = {"X-Internal-Token": config.INTERNAL_API_TOKEN}
                 resp = httpx.post(
                     f"{CONCIERGE_URL}/chat",
-                    json={"message": enriched_input, "session_id": st.session_state.session_id},
+                    json={"message": user_input, "session_id": st.session_state.session_id},
                     headers=headers,
                     timeout=30.0,
                 )

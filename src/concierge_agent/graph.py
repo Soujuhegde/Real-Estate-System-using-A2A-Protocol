@@ -38,7 +38,9 @@ Classify the user's request into exactly one of:
 - market_insights      (user asks about property prices, market trends, ROI, risks, or any general real estate questions)
 - unknown              (only if the request is completely unrelated to real estate)
 
-Also extract any structured data from the input as JSON.
+Extract structured data from the input as JSON into the 'payload' object.
+For customer_onboarding, you must extract: full_name, email, buyer_type (buyer|investor|both), budget_min (number), budget_max (number), phone (string), preferred_locations (array of strings).
+For deal_onboarding, you must extract: title, location, property_type (apartment|villa|plot|commercial|office), price (number), area_sqft (number), bedrooms (number), bathrooms (number), owner_name, owner_contact.
 
 CRITICAL: Respond ONLY with a valid JSON object. No markdown, no conversational text.
 Format: {"intent": "<intent>", "payload": {<extracted fields>}}
@@ -54,9 +56,9 @@ def classify_intent_node(state: OrchestratorState) -> OrchestratorState:
     # If there's history, we use chat_complete_history. Otherwise, regular.
     try:
         if len(history) > 1: # Greater than 1 because it includes the current user input
-            raw = chat_complete_history(INTENT_SYSTEM, history, temperature=0.1)
+            raw = chat_complete_history(INTENT_SYSTEM, history, temperature=0.1, json_mode=True)
         else:
-            raw = chat_complete(INTENT_SYSTEM, user_input, temperature=0.1)
+            raw = chat_complete(INTENT_SYSTEM, user_input, temperature=0.1, json_mode=True)
             
         raw = raw.strip()
         import re

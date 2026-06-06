@@ -70,7 +70,6 @@ AMENITIES_OPTIONS = ["Swimming Pool", "Gym", "Clubhouse", "Security", "Power Bac
                      "Co-working Space", "Concierge", "Spa", "Children's Play Area"]
 
 with st.container():
-    st.markdown('<div class="form-container">', unsafe_allow_html=True)
     with st.form("deal_form", clear_on_submit=False):
         st.markdown("<h4 style='margin-top:0;color:#334155'>Core Specifications</h4>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
@@ -111,7 +110,6 @@ with st.container():
 
         st.markdown("<br>", unsafe_allow_html=True)
         submitted = st.form_submit_button("🚀 List Property Portfolio", type="primary", use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 if submitted:
     if not all([title, location, property_type, price]):

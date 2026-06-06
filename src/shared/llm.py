@@ -59,7 +59,7 @@ def chat_complete(system_prompt: str, user_prompt: str, temperature: float = 0.7
         raise
 
 
-def chat_complete_history(system_prompt: str, chat_history: list, temperature: float = 0.7) -> str:
+def chat_complete_history(system_prompt: str, chat_history: list, temperature: float = 0.7, json_mode: bool = False) -> str:
     """Call Sarvam LLM with a full conversation history"""
     if not config.SARVAM_API_KEY:
         logger.warning("SARVAM_API_KEY not set — returning mock LLM response")
@@ -70,12 +70,16 @@ def chat_complete_history(system_prompt: str, chat_history: list, temperature: f
     messages.extend(chat_history)
 
     try:
-        response = client.chat.completions.create(
-            model=config.SARVAM_MODEL,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=4096,
-        )
+        kwargs = {
+            "model": config.SARVAM_MODEL,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": 4096,
+        }
+        if json_mode:
+            kwargs["response_format"] = {"type": "json_object"}
+            
+        response = client.chat.completions.create(**kwargs)
         msg = response.choices[0].message
         content = msg.content or getattr(msg, 'reasoning_content', '') or ''
         return content.strip()
