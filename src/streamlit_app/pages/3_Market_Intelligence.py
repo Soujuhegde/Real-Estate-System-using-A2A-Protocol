@@ -7,10 +7,14 @@ import json
 import sqlite3
 import pandas as pd
 import plotly.express as px
-from shared import config
-
 import sys
+import os
+
+# Add src directory to sys.path so we can import from shared and auth
+sys.path.append('src')
 sys.path.append('src/streamlit_app')
+
+from shared import config
 from auth import require_auth
 
 st.set_page_config(page_title="Market Intelligence", page_icon="📊", layout="wide")
@@ -91,9 +95,11 @@ with tab1:
 
         with st.spinner("Searching market data..."):
             try:
+                headers = {"X-Internal-Token": config.INTERNAL_API_TOKEN}
                 resp = httpx.post(
                     f"{CONCIERGE_URL}/agents/marketing/insights",
                     json={"payload": payload},
+                    headers=headers,
                     timeout=20.0,
                 )
                 resp.raise_for_status()
@@ -106,10 +112,16 @@ with tab1:
 
                 if state == "completed":
                     results = []
+                    artifacts = data.get("artifacts") or []
                     for art in artifacts:
-                        for part in art.get("parts", []):
+                        parts = art.get("parts") or []
+                        for part in parts:
                             try:
-                                results = json.loads(part.get("text", "[]"))
+                                parsed = json.loads(part.get("text", "[]"))
+                                if isinstance(parsed, list):
+                                    results = parsed
+                                elif isinstance(parsed, dict):
+                                    results = [parsed]
                             except Exception:
                                 pass
 
@@ -192,9 +204,11 @@ with tab2:
 
             with st.spinner("Analyzing market data..."):
                 try:
+                    headers = {"X-Internal-Token": config.INTERNAL_API_TOKEN}
                     resp = httpx.post(
                         f"{CONCIERGE_URL}/agents/marketing/insights",
                         json={"payload": payload},
+                        headers=headers,
                         timeout=30.0,
                     )
                     resp.raise_for_status()
@@ -207,12 +221,17 @@ with tab2:
                     if state == "completed":
                         st.success("✅ Insights generated and saved successfully!")
 
-                        artifacts = data.get("artifacts", [])
+                        artifacts = data.get("artifacts") or []
                         insights = []
                         for art in artifacts:
-                            for part in art.get("parts", []):
+                            parts = art.get("parts") or []
+                            for part in parts:
                                 try:
-                                    insights = json.loads(part.get("text", "[]"))
+                                    parsed = json.loads(part.get("text", "[]"))
+                                    if isinstance(parsed, list):
+                                        insights = parsed
+                                    elif isinstance(parsed, dict):
+                                        insights = [parsed]
                                 except Exception:
                                     pass
 

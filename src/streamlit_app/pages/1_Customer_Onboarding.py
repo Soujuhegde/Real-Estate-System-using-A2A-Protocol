@@ -118,10 +118,12 @@ if submitted:
 
         with st.spinner("Saving client details..."):
             try:
+                headers = {"X-Internal-Token": config.INTERNAL_API_TOKEN}
                 resp = httpx.post(
                     f"{CONCIERGE_URL}/agents/customer/onboard",
                     json={"payload": payload},
-                    timeout=15.0,
+                    headers=headers,
+                    timeout=10.0,
                 )
                 resp.raise_for_status()
                 data = resp.json()

@@ -138,10 +138,12 @@ if submitted:
 
         with st.spinner("Saving property details..."):
             try:
+                headers = {"X-Internal-Token": config.INTERNAL_API_TOKEN}
                 resp = httpx.post(
                     f"{CONCIERGE_URL}/agents/deal/onboard",
                     json={"payload": payload},
-                    timeout=20.0,
+                    headers=headers,
+                    timeout=30.0,
                 )
                 resp.raise_for_status()
                 data = resp.json()
