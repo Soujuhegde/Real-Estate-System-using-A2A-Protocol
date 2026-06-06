@@ -373,8 +373,11 @@ done
 
 ### Production Hardening Checklist
 
+- [x] Add Internal API Token security on all agent endpoints
+- [x] Asynchronous background task execution for heavy ML matchmaking
+- [x] Strict JSON schema validation for LLM outputs
 - [ ] Replace SQLite with PostgreSQL
-- [ ] Add JWT auth on all agent endpoints
+- [ ] Add JWT auth on all user-facing endpoints
 - [ ] Rate limit `/chat` endpoint (e.g. 60 req/min)
 - [ ] Run each agent in Docker container
 - [ ] Add Prometheus metrics middleware

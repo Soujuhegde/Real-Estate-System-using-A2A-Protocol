@@ -32,7 +32,7 @@ data/
 logs/
 *.log
 *.sqlite3
-realestate.db
+*.db
 
 # IDEs
 .vscode/
