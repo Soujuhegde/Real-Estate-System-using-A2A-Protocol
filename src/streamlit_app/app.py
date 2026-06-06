@@ -84,7 +84,9 @@ st.divider()
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def check_agent_health(url: str) -> bool:
     try:
-        r = httpx.get(f"{url}/health", timeout=3.0)
+        from shared import config
+        headers = {"X-Internal-Token": config.INTERNAL_API_TOKEN}
+        r = httpx.get(f"{url}/health", headers=headers, timeout=3.0)
         return r.status_code == 200
     except:
         return False
