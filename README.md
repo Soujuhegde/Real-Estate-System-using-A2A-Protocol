@@ -190,29 +190,54 @@ PINECONE_ENVIRONMENT=us-east-1
 
 ### Option A — One-shot startup (recommended)
 
+**For Linux / macOS:**
 ```bash
 bash start_all.sh
 ```
 
-This starts all four agents + Streamlit and prints URLs.
+**For Windows (PowerShell):**
+```powershell
+.\start_all.ps1
+```
+
+This starts all four agents + Streamlit in the background and prints URLs.
 
 ### Option B — Manual (separate terminals)
 
+**For Linux / macOS:**
 ```bash
 # Terminal 1 — Customer Agent
-PYTHONPATH=. python -m uvicorn customer_agent.main:app --port 8001 --reload
+PYTHONPATH=src python -m uvicorn customer_agent.main:app --port 8001 --reload
 
 # Terminal 2 — Deal Agent
-PYTHONPATH=. python -m uvicorn deal_agent.main:app --port 8002 --reload
+PYTHONPATH=src python -m uvicorn deal_agent.main:app --port 8002 --reload
 
 # Terminal 3 — Marketing Agent
-PYTHONPATH=. python -m uvicorn marketing_agent.main:app --port 8003 --reload
+PYTHONPATH=src python -m uvicorn marketing_agent.main:app --port 8003 --reload
 
 # Terminal 4 — Concierge (start AFTER other agents)
-PYTHONPATH=. python -m uvicorn concierge_agent.main:app --port 8000 --reload
+PYTHONPATH=src python -m uvicorn concierge_agent.main:app --port 8000 --reload
 
 # Terminal 5 — Streamlit
-streamlit run streamlit_app/app.py
+PYTHONPATH=src streamlit run src/streamlit_app/app.py
+```
+
+**For Windows (PowerShell):**
+```powershell
+# Terminal 1 — Customer Agent
+$env:PYTHONPATH="src"; .\.venv\Scripts\python.exe -m uvicorn customer_agent.main:app --port 8001 --reload
+
+# Terminal 2 — Deal Agent
+$env:PYTHONPATH="src"; .\.venv\Scripts\python.exe -m uvicorn deal_agent.main:app --port 8002 --reload
+
+# Terminal 3 — Marketing Agent
+$env:PYTHONPATH="src"; .\.venv\Scripts\python.exe -m uvicorn marketing_agent.main:app --port 8003 --reload
+
+# Terminal 4 — Concierge (start AFTER other agents)
+$env:PYTHONPATH="src"; .\.venv\Scripts\python.exe -m uvicorn concierge_agent.main:app --port 8000 --reload
+
+# Terminal 5 — Streamlit
+$env:PYTHONPATH="src"; .\.venv\Scripts\python.exe -m streamlit run src/streamlit_app/app.py
 ```
 
 ### Verify
