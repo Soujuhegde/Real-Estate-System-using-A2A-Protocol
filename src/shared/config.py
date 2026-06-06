@@ -40,3 +40,6 @@ AGENT_REGISTRY = {
     "deal_onboarding": DEAL_AGENT_URL,
     "marketing_intelligence": MARKETING_AGENT_URL,
 }
+
+# ── Security ─────────────────────────────────────────────────────────────────
+INTERNAL_API_TOKEN: str = os.getenv("INTERNAL_API_TOKEN", "dev-secret-token")
